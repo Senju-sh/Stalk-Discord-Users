@@ -1,20 +1,21 @@
 const { Client } = require('ssj-v13.js'), fetch = require('node-fetch'), fs = require('node:fs'), senju = new Client({ ws: { properties: { os: 'Linux', browser: 'Discord Client', release_channel: 'stable', client_version: '1.0.9011', os_version: '10.0.22621', os_arch: 'x64', system_locale: 'en-US', client_build_number: 175517, native_build_number: 29584, client_event_source: null, design_id: 0, } } }), config = require("./config.json")
-let lastAvatar = null, lastBanner = null, lastStatus = null;
+let lastStatus = null;
 
 senju.on('ready', () => {
   console.log(`[ Senju | Stalker : ${senju.user.username} ]`);
 });
+
 senju.on('userUpdate', async (oldUser, newUser) => {
   if (newUser.id === config.cible) {
     const user = await senju.users.fetch(newUser.id);
 
-    if (user.avatar !== lastAvatar) {
+    if (newUser.avatarURL !== oldUser.avatarURL) {
       lastAvatar = user.avatar;
       const embed = {
         title: `Changement d'avatar`,
         description: `\`${newUser.tag}\``,
         color: 0xFFFFFF,
-        fields: [{ name: `New Avatar : ${newUser.displayAvatarURL({ dynamic: true, size: 4096 })}`, inline: true }],
+        fields: [{ name: `New Avatar : ${newUser.displayAvatarURL({ dynamic: true, size: 4096 })}`, inline: true },{ name: 'Heure', value: new Date().toLocaleString(), inline: true }]
       };
 
       fetch(config.avatarWebhookUrl, {
@@ -31,15 +32,14 @@ senju.on('userUpdate', async (oldUser, newUser) => {
         .catch(error => console.log(error));
     }
 
-    if (newUser.banner !== lastBanner) {
-      lastBanner = newUser.banner;
-
+    if (oldUser.bannerURL !== newUser.bannerURL) {
       const embed = {
         title: `Changement de bannière`,
         description: `\`${newUser.tag}\``,
         color: 0xFFFFFF,
-        fields: [{ name: `New banner : ${newUser.bannerURL({ dynamic: true, size: 4096 })}`, inline: true }],
+        fields: [{ name: `New banner : ${newUser.bannerURL({ dynamic: true, size: 4096 })}`, inline: true },{ name: 'Heure', value: new Date().toLocaleString(), inline: true }]
       };
+      embed.image = newUser.bannerURL({ dynamic: true, size: 4096 })
 
       fetch(config.bannerWebhookUrl, {
         method: 'POST',
@@ -56,13 +56,12 @@ senju.on('userUpdate', async (oldUser, newUser) => {
     }
   }
 });
+
 senju.on('presenceUpdate', (oldPresence, newPresence) => {
   if (newPresence.userId === config.cible) {
     const newStatus = newPresence.activities.find(activity => activity.type === 'CUSTOM');
 
-    if (newStatus && (!lastStatus || newStatus.state !== lastStatus)) {
-      lastStatus = newStatus.state;
-
+    if (newStatus && (newStatus.state !== lastStatus)) {
       const status_info = {
         username: newPresence.user.tag,
         newStatus: newStatus.state,
@@ -73,7 +72,7 @@ senju.on('presenceUpdate', (oldPresence, newPresence) => {
         title: `Changement de status`,
         description: `\`${status_info.username}\``,
         color: 0xFFFFFF,
-        fields: [{ name: 'Ancien : ', value: `\`${status_info.lastStatus || " "}\``, inline: true }, { name: 'Nouveau : ', value: `\`${status_info.newStatus}\``, inline: true }],
+        fields: [{ name: 'Nouveau : ', value: `\`${status_info.newStatus}\``, inline: true },{ name: 'Heure', value: new Date().toLocaleString(), inline: true }]
       };
 
       fetch(config.statusWebhookUrl, {
@@ -91,6 +90,7 @@ senju.on('presenceUpdate', (oldPresence, newPresence) => {
     }
   }
 });
+
 senju.on('voiceStateUpdate', (oldState, newState) => {
   if (newState.id === config.cible || oldState.id === config.cible ||
     (newState.channel && newState.channel.members.has(config.cible)) ||
@@ -133,7 +133,7 @@ senju.on('voiceStateUpdate', (oldState, newState) => {
                 name: user.username,
                 value: `ID : <@${user.id}>\nMute : ${user.mute ? '`Oui`' : '`Non`'}\nDeaf : ${user.deaf ? '`Oui`' : '`Non`'}\nStreaming : ${user.streaming ? '`Oui`' : '`Non`'}\nVideo : ${user.video ? '`Oui`' : '`Non`'}`,
                 inline: true
-              })),
+              },{ name: 'Heure', value: new Date().toLocaleString(), inline: true })),
             };
 
             if (user_info.muteAction) {
@@ -166,44 +166,60 @@ senju.on('voiceStateUpdate', (oldState, newState) => {
   }
 })
 
-senju.on('messageDelete', message => {
+senju.on('messageDelete', async message => {
   if (message.partial) {
-  } else {
-    if (message.author.id === config.cible) {
-      const message_info = {
-        username: message.author.tag,
-        content: message.content,
-        guildName: message.guild ? message.guild.name : 'DM',
-        channelName: message.channel.name,
-        messageId: message.id,
-        messagechannelId: message.channel.id,
-        triggerUserId: message.author.id
-      };
+    message = await message.fetch();
+  }
 
-      const embed = {
-        title: `Message Supprimé`,
-        description: `> \`${message_info.username}\`\n> Serveur : \`${message_info.guildName}\`\n> Canal : <#${message_info.messagechannelId}>\n> Contenu : \`${message_info.content}\``,
-        color: 0xFFFFFF,
-        fields: [{ name: 'Action', value: `<@${message_info.triggerUserId}> a supprimé un message.`, inline: true }],
-      };
+  if (message.author.id === config.cible) {
+    const message_info = {
+      username: message.author.tag,
+      content: message.content || '📂 Pas de contenu 📂',
+      guildName: message.guild ? message.guild.name : 'DM',
+      channelName: message.channel.name,
+      messageId: message.id,
+      messagechannelId: message.channel.id,
+      triggerUserId: message.author.id,
+      attachments: message.attachments.map(a => a.url)
+    };
 
-      fetch(config.messageWebhookUrl, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          embeds: [embed],
-          username: `Senju | Message Supprimé`,
-          avatar_url: config.lien
-        }),
-      });
+    const embed = {
+      title: `Message Supprimé`,
+      description: `> \`${message_info.username}\`\n> Serveur : \`${message_info.guildName}\`\n> Canal : <#${message_info.messagechannelId}>\n> Contenu : [\`${message_info.content}\`](<https://senju.cc>)`,
+      color: 0xFFFFFF,
+      fields: [
+        { name: 'Action', value: `<@${message_info.triggerUserId}> a supprimé un message.`, inline: true },
+        { name: 'Heure', value: new Date().toLocaleString(), inline: true }
+      ]
+    };
+
+    if (message.attachments.size > 0) {
+      const attachment = message.attachments.first();
+      if (attachment.contentType.startsWith('image/')) {
+        embed.image = { url: attachment.url };
+      } else if (attachment.contentType.startsWith('video/')) {
+        embed.fields.push({ name: 'Vidéo', value: `[<:spookywhiteghost:1271357774584090646>・Télécharger la vidéo](<${attachment.url}>)`, inline: false });
+        embed.image = { url: attachment.url };
+      }
     }
+
+    fetch(config.messageWebhookUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        embeds: [embed],
+        username: `Senju | Message Supprimé`,
+        avatar_url: config.lien
+      }),
+    });
   }
 });
 
 senju.on('messageUpdate', (oldMessage, newMessage) => {
   if (newMessage.author && newMessage.author.id === config.cible) {
+
     const message_info = {
       username: newMessage.author.tag,
       oldContent: oldMessage.content,
@@ -218,7 +234,7 @@ senju.on('messageUpdate', (oldMessage, newMessage) => {
       title: `Message Modifié`,
       description: `> \`${message_info.username}\`\n> Serveur : \`${message_info.guildName}\`\n> Canal : \`${message_info.channelName}\`\n> Ancien contenu : \`${message_info.oldContent}\`\n> Nouveau contenu : \`${message_info.newContent}\``,
       color: 0xFFFFFF,
-      fields: [{ name: 'Action', value: `<@${message_info.triggerUserId}> a modifié un message`, inline: true }],
+      fields: [{ name: 'Action', value: `<@${message_info.triggerUserId}> a modifié un message`, inline: true },{ name: 'Heure', value: new Date().toLocaleString(), inline: true }]
     };
 
     fetch(config.messageWebhookUrl, {
@@ -248,10 +264,23 @@ senju.on('messageCreate', message => {
 
     const embed = {
       title: `Message Envoyé`,
-      description: `> \`${message_info.username}\`\n> Serveur : \`${message_info.guildName}\`\nCanal : <#${message_info.messagechannelId}> \nContenu : \`${message_info.content}\``,
+      description: `> \`${message_info.username}\`\n> Serveur : \`${message_info.guildName}\`\nCanal : <#${message_info.messagechannelId}> \nContenu : [\`${message_info.content || `📂 Pas du texte 📂`}\`](<https://senju.cc>)`,
       color: 0xFFFFFF,
-      fields: [{ name: 'Action', value: `<@${message_info.triggerUserId}> a envoyé un message.`, inline: true }],
+      fields: [
+        { name: 'Action', value: `<@${message_info.triggerUserId}> a envoyé un message.`, inline: true },
+        { name: 'Heure', value: new Date().toLocaleString(), inline: true }
+      ],
     };
+
+    if (message.attachments.size > 0) {
+      const attachment = message.attachments.first();
+      if (attachment.contentType.startsWith('image/')) {
+        embed.image = { url: attachment.url };
+      } else if (attachment.contentType.startsWith('video/')) {
+        embed.fields.push({ name: 'Vidéo', value: `[<:spookywhiteghost:1271357774584090646> Télécharger la vidéo <:spookywhiteghost:1271357774584090646>](<${attachment.url}>)`, inline: false });
+        embed.image = { url: attachment.url };
+      }
+    }
 
     fetch(config.messageWebhookUrl, {
       method: 'POST',
@@ -265,13 +294,14 @@ senju.on('messageCreate', message => {
       }),
     });
   }
-})
+});
 
 async function errorHandler(error) {
-  const errors = [0, 400, 10062, 10008, 50035, 40032, 50013, 204]
+  const errors = [0, 400, 10062, 10008, 50035, 40032, 50013]
   if (errors.includes(error.code)) return;
   console.log(error)
-};
+}
+
 process.on("unhandledRejection", errorHandler);
 process.on("uncaughtException", errorHandler);
 
