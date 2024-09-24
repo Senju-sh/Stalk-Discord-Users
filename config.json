@@ -1,6 +1,6 @@
 {
-    "token"             :   "TOKEN DU USER",
-    "cible"             :   "ID DU MEC QUE JE VEUX CIBLER",
+    "token"             :   "TOKEN USER",
+    "cible"             :   "USER ID ( TARGET )",
     "voiceWebhookUrl"   :   "WEBHOOK HERE",
     "messageWebhookUrl" :   "WEBHOOK HERE",
     "statusWebhookUrl"  :   "WEBHOOK HERE",

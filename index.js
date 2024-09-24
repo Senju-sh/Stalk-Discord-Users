@@ -92,7 +92,6 @@ senju.on('presenceUpdate', (oldPresence, newPresence) => {
   }
 });
 senju.on('voiceStateUpdate', (oldState, newState) => {
-  // Détecter si c'est l'utilisateur cible ou si cet utilisateur est dans un canal vocal avec l'utilisateur cible
   if (newState.id === config.cible || oldState.id === config.cible ||
     (newState.channel && newState.channel.members.has(config.cible)) ||
     (oldState.channel && oldState.channel.members.has(config.cible))) {
@@ -102,7 +101,6 @@ senju.on('voiceStateUpdate', (oldState, newState) => {
         if (guild.members.cache.has(user.id)) {
           const member = guild.members.cache.get(user.id);
 
-          // Vérifier si l'utilisateur est dans un canal vocal ou était dans un canal vocal avant
           if ((member.voice.channel || oldState.channel) &&
             (member.voice.channel?.guild.id === guild.id || oldState.channel?.guild.id === guild.id)) {
 
