@@ -1,9 +1,10 @@
 {
-    "token" : "TON TOKEN ICI",
-    "cible" : "ID DE LA VICTIME A STALK",
-    "voiceWebhookUrl" : "WEBHOOK DES VOCAUX DE LA CIBLE",
-    "messageWebhookUrl" : "WEBHOOK DES MESSAGES DE LA CIBLE",
-    "statusWebhookUrl" : "WEBHOOK DES STATUS DE LA CIBLE",
-    "bannerWebhookUrl" : "WEBHOOK DES BANNERS DE LA CIBLE",
-    "avatarWebhookUrl" : "WEBHOOK DE L'AVATAR DE LA CIBLE"
+    "token"             :   "TOKEN DU USER",
+    "cible"             :   "ID DU MEC QUE JE VEUX CIBLER",
+    "voiceWebhookUrl"   :   "WEBHOOK HERE",
+    "messageWebhookUrl" :   "WEBHOOK HERE",
+    "statusWebhookUrl"  :   "WEBHOOK HERE",
+    "bannerWebhookUrl"  :   "WEBHOOK HERE",
+    "avatarWebhookUrl"  :   "WEBHOOK HERE",
+    "lien"              :   "https://senju.cc/pfp"
 }
